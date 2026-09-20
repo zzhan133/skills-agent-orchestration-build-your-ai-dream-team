@@ -1,0 +1,28 @@
+{
+  "projects": [
+    {
+      "name": "Contributor Onboarding",
+      "owner": "Maya Chen",
+      "status": "Active",
+      "recentActivity": "Updated the first-contribution checklist yesterday.",
+      "priority": "High",
+      "summary": "Make the first contribution path clear, welcoming, and easy to complete."
+    },
+    {
+      "name": "Release Readiness",
+      "owner": "Jordan Patel",
+      "status": "On track",
+      "recentActivity": "Automated the final regression report this week.",
+      "priority": "Medium",
+      "summary": "Coordinate quality checks and documentation before the next community release."
+    },
+    {
+      "name": "Accessibility Audit",
+      "owner": "Sam Rivera",
+      "status": "At risk",
+      "recentActivity": "Logged keyboard-navigation findings in the audit board.",
+      "priority": "High",
+      "summary": "Resolve the highest-impact accessibility findings across contributor workflows."
+    }
+  ]
+}
