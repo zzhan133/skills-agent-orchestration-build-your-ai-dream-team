@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="dashboard__header">
+        <p class="dashboard__eyebrow">Contributor workspace</p>
+        <h1 class="dashboard__title">Project Pulse</h1>
+        <p class="dashboard__description">
+          A focused view of the work helping our contributor community move forward.
+        </p>
+      </header>
+
+      <p class="dashboard__context" id="dashboard-context">
+        Project updates are loading.
+      </p>
+
+      <section class="project-grid" aria-label="Project updates" aria-live="polite">
+        <div class="dashboard__state state--loading" role="status">
+          <p>Loading project updates…</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const requiredFields = [
+          "name",
+          "owner",
+          "status",
+          "recentActivity",
+          "priority",
+          "summary"
+        ];
+        const statusClasses = {
+          active: "status--active",
+          "on-track": "status--on-track",
+          "at-risk": "status--at-risk",
+          blocked: "status--blocked",
+          complete: "status--complete"
+        };
+        const priorityClasses = {
+          high: "priority--high",
+          medium: "priority--medium",
+          low: "priority--low"
+        };
+
+        const projectGrid = document.querySelector(".project-grid");
+        const dashboardContext = document.querySelector("#dashboard-context");
+
+        function createElement(tagName, className, value) {
+          const element = document.createElement(tagName);
+          if (className) {
+            element.className = className;
+          }
+          if (value !== undefined) {
+            element.textContent = value;
+          }
+          return element;
+        }
+
+        function normalizeValue(value) {
+          return value.trim().toLowerCase().replace(/\s+/g, "-");
+        }
+
+        function isValidProject(project) {
+          return project !== null &&
+            typeof project === "object" &&
+            !Array.isArray(project) &&
+            requiredFields.every((field) =>
+              typeof project[field] === "string" && project[field].trim() !== ""
+            );
+        }
+
+        function clearProjectGrid() {
+          projectGrid.replaceChildren();
+        }
+
+        function showState(stateClass, message, isError) {
+          clearProjectGrid();
+          const state = createElement(
+            "div",
+            `dashboard__state ${stateClass}`
+          );
+          state.setAttribute("role", isError ? "alert" : "status");
+          state.append(createElement("p", "", message));
+          projectGrid.append(state);
+        }
+
+        function createMetadataItem(label, value) {
+          const item = createElement("li", "project-card__metadata-item");
+          item.append(
+            createElement("span", "project-card__metadata-label", label),
+            createElement("span", "project-card__metadata-value", value)
+          );
+          return item;
+        }
+
+        function createProjectCard(project) {
+          const card = createElement("article", "project-card");
+          const header = createElement("header", "project-card__header");
+          const title = createElement("h3", "project-card__title", project.name);
+          const summary = createElement(
+            "p",
+            "project-card__summary",
+            project.summary
+          );
+          const metadata = createElement("ul", "project-card__metadata");
+          const footer = createElement("footer", "project-card__footer");
+          const status = createElement(
+            "span",
+            `badge ${statusClasses[normalizeValue(project.status)] || ""}`,
+            `Status: ${project.status}`
+          );
+          const priority = createElement(
+            "span",
+            `priority ${priorityClasses[normalizeValue(project.priority)] || ""}`,
+            project.priority
+          );
+
+          header.append(title);
+          metadata.append(
+            createMetadataItem("Owner", project.owner),
+            createMetadataItem("Recent activity", project.recentActivity)
+          );
+          footer.append(status, priority);
+          card.append(header, summary, metadata, footer);
+          return card;
+        }
+
+        async function loadProjects() {
+          try {
+            const response = await fetch("project-data.json");
+            if (!response.ok) {
+              throw new Error(`The server returned ${response.status}.`);
+            }
+
+            let data;
+            try {
+              data = await response.json();
+            } catch {
+              dashboardContext.textContent = "Project updates are unavailable.";
+              showState(
+                "state--error",
+                "Project updates could not be loaded because the data is not valid JSON.",
+                true
+              );
+              return;
+            }
+
+            if (!data || !Array.isArray(data.projects) ||
+              !data.projects.every(isValidProject)) {
+              dashboardContext.textContent = "Project updates need attention.";
+              showState(
+                "state--error",
+                "Project updates could not be shown because the data has an unexpected shape.",
+                true
+              );
+              return;
+            }
+
+            if (data.projects.length === 0) {
+              dashboardContext.textContent = "There are no project updates right now.";
+              showState(
+                "state--empty",
+                "No projects are available yet. Please check back soon.",
+                false
+              );
+              return;
+            }
+
+            clearProjectGrid();
+            data.projects.forEach((project) => {
+              projectGrid.append(createProjectCard(project));
+            });
+            dashboardContext.textContent =
+              `${data.projects.length} active project updates are ready to review.`;
+          } catch {
+            dashboardContext.textContent = "Project updates are unavailable.";
+            showState(
+              "state--error",
+              "Project updates could not be loaded. Check your connection and try again.",
+              true
+            );
+          }
+        }
+
+        loadProjects();
+      })();
+    </script>
+  </body>
+</html>
